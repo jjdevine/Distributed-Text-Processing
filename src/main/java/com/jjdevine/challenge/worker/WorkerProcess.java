@@ -129,6 +129,7 @@ public class WorkerProcess {
 		} finally {
 			try {
 				if(reader != null) {
+					Logger.log("Closing Reader", nodeId);
 					reader.close();
 				}
 			} catch(IOException ex) {
@@ -155,7 +156,7 @@ public class WorkerProcess {
 		if(reader == null) {
 			//first job, need to set up reader
 			try {
-				Logger.log("opening reader", nodeId);
+				Logger.log("Opening Reader", nodeId);
 				reader = Files.newBufferedReader(Paths.get(appData.getSourceLocation()));
 			} catch (FileNotFoundException e) {
 				throw new RuntimeException("Could not find source file", e);
