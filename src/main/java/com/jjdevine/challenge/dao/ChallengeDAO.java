@@ -148,4 +148,9 @@ public interface ChallengeDAO {
 	 */
 	String getNextUnassignedAmalgamationJob();
 	
+	/**
+	 * Tidy up any open connections to resources. (After which class should be discarded).
+	 */
+	void closeConnections();
+	
 }

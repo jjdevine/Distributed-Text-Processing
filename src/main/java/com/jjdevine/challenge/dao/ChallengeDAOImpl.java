@@ -71,6 +71,11 @@ public class ChallengeDAOImpl implements ChallengeDAO {
 	 * The collection where the final results are stored.
 	 */
 	private static final String COLLECTION_FINAL_COUNTS = "final_word_counts";
+	
+	/**
+	 * The Database to use
+	 */
+	private static final String DATABASE = "challenge";
 
 	/**
 	 * Public constructor.
@@ -78,7 +83,7 @@ public class ChallengeDAOImpl implements ChallengeDAO {
 	 */
 	public ChallengeDAOImpl(AppData appData) {
 		client = new MongoClient(appData.getMongoHost());
-		db = client.getDatabase(appData.getMongoId());
+		db = client.getDatabase(DATABASE);
 	}
 
 	@Override
@@ -355,4 +360,11 @@ public class ChallengeDAOImpl implements ChallengeDAO {
 		return db.getCollection(COLLECTION_TEXT_PROCESSING_JOB_RESULTS).find(
 				new Document().append("prefix", prefix));
 	}
+
+	@Override
+	public void closeConnections() {
+		client.close();
+	}
+	
+	
 }

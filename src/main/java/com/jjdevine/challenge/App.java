@@ -1,6 +1,8 @@
 package com.jjdevine.challenge;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.jjdevine.challenge.controller.ControllerProcess;
 import com.jjdevine.challenge.dao.ChallengeDAO;
@@ -43,22 +45,41 @@ public class App
 	 * or a worker (2nd instance or later)
 	 */
 	public void initialise() {
-		if(shouldRunAsControlProcess()) {
-			challengeDAO.clearAllCollections(); //reset all collections
-			new ControllerProcess(appData, challengeDAO).process();
-		} else {
-			Logger.log("Creating " + NUM_THREADS + " worker threads.", "n/a");
-			//spawn a number of worker threads
-			for(int count=0; count < NUM_THREADS; count++) {
-				new Thread(new Runnable() {
+		try {
+			if(shouldRunAsControlProcess()) {
+				challengeDAO.clearAllCollections(); //reset all collections
+				new ControllerProcess(appData, challengeDAO).process();
+			} else {
+				Logger.log("Creating " + NUM_THREADS + " worker threads.", "n/a");
+				//spawn a number of worker threads
+				
+				List<Thread> threads = new ArrayList<>();
+				
+				for(int count=0; count < NUM_THREADS; count++) {
 					
-					@Override
-					public void run() {
-						new WorkerProcess(appData, challengeDAO).process();
+					
+					Thread t = new Thread(new Runnable() {
+						
+						@Override
+						public void run() {
+							new WorkerProcess(appData, challengeDAO).process();
+						}
+					});
+					threads.add(t);
+					t.start();
+				}
+				
+				for(Thread thread: threads) {
+					try {
+						thread.join();
+					} catch (InterruptedException e) {
+						throw new RuntimeException("Error joining thread", e);
 					}
-				}).start();
+				}
 			}
-			
+		} finally {
+			Logger.log("closing connections", "n/a");
+			challengeDAO.closeConnections();
 		}
 	}
 
@@ -85,11 +106,7 @@ public class App
      * @return An AppData object containing application configuration.
      */
     private static AppData parseConfiguration(String[] args) {
-    	
-    	if(args.length != 6) {
-    		throw new IllegalArgumentException("Incorrect number of arguments");
-    	}
-    	
+
     	String currentArgName = null;
     	AppData appData = new AppData();
     	for(int index=0; index<args.length; index++) {
@@ -107,13 +124,20 @@ public class App
     			case "-mongo":
     				appData.setMongoHost(argValue);
     				break;
-    			case "-id":
-    				appData.setMongoId(argValue);
+    			case "-id": //may be supplied but will be ignored
     				break;
     			default:
     				throw new IllegalArgumentException("<" + currentArgName + "> is not a valid switch");
     			}
     		}	
+    	}
+    	
+    	if(appData.getSourceLocation() == null) {
+    		throw new IllegalArgumentException("-source must be set");
+    	}
+    	
+    	if(appData.getMongoHost() == null) {
+    		throw new IllegalArgumentException("-mongo must be set");
     	}
     	return appData;
     }
